@@ -1,99 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- SMS and network permissions -->
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- Network & background essentials -->
     <uses-permission android:name="android.permission.INTERNET" />
-    
-    <!-- Declare that telephony hardware is not required -->
-    <uses-feature 
-        android:name="android.hardware.telephony" 
-        android:required="false" />
-    
-    <!-- Boot receiver permission -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    
-    <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    
-    <!-- Wake lock permission for background processing -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
-    <!-- Notification permission for Android 13+ -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />
-    
-    <!-- Notification listener permission -->
-    <!-- This is a protected permission, but users can grant it through Settings > Apps > Special access > Notification access -->
-    <!-- This is the standard way for legitimate notification management apps to access notifications -->
-    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" 
+    <!-- Android 13+ notifications runtime permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- DO NOT declare BIND_NOTIFICATION_LISTENER_SERVICE as a uses-permission.
+         It is granted via Settings, and enforced on the <service> below. -->
+
+    <!-- Optional: usage stats (untuk fitur “recent apps” di app picker).
+         User harus mengaktifkan manual di Settings > Special access > Usage access -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-    
-    <!-- Usage stats permission for MRU apps -->
-    <!-- Users can grant this through Settings > Apps > Special access > Usage access -->
-    <!-- This allows us to show recently used apps in the app picker for better UX -->
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" 
-        tools:ignore="ProtectedPermissions" />
-    
-    <!-- Query all packages permission for comprehensive app list (requires special approval) -->
-    <!-- This is a fallback - the queries section above should handle most cases -->
-    <!-- Google Play may require justification for this permission -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" 
+
+    <!-- Visibility: untuk bisa menampilkan seluruh daftar aplikasi yang terpasang.
+         Wajib dipertimbangkan bila target rilis Play Store (butuh justifikasi). -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    
-    <!-- Package visibility queries for Android 11+ (API 30+) -->
-    <!-- This allows the app to see all installed applications for app picker -->
+
+    <!-- (Opsional) query untuk beberapa kategori agar sebagian device tanpa QUERY_ALL tetap dapat menampilkan banyak aplikasi -->
     <queries>
-        <!-- Query for all apps that can receive notifications -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
-        
-        <!-- Query for messaging apps -->
         <intent>
             <action android:name="android.intent.action.SEND" />
             <data android:mimeType="text/plain" />
         </intent>
-        
-        <!-- Query for apps that handle notifications -->
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="content" />
-        </intent>
-        
-        <!-- Specific popular apps for better compatibility -->
-        <package android:name="com.whatsapp" />
-        <package android:name="com.facebook.orca" />
-        <package android:name="org.telegram.messenger" />
-        <package android:name="com.instagram.android" />
-        <package android:name="com.facebook.katana" />
-        <package android:name="com.twitter.android" />
-        <package android:name="com.google.android.apps.messaging" />
-        <package android:name="com.slack" />
-        <package android:name="com.discord" />
-        <package android:name="com.skype.raider" />
-        <package android:name="com.viber.voip" />
-        <package android:name="com.google.android.talk" />
-        <package android:name="com.microsoft.teams" />
-        <package android:name="com.zhiliaoapp.musically" />
-        <package android:name="com.snapchat.android" />
-        <package android:name="com.linkedin.android" />
-        <package android:name="com.pinterest" />
-        <package android:name="com.reddit.frontpage" />
-        <package android:name="com.google.android.gm" />
-        <package android:name="com.spotify.music" />
-        <package android:name="com.netflix.mediaclient" />
-        <package android:name="com.amazon.mShop.android.shopping" />
-        <package android:name="com.paypal.android.p2pmobile" />
-        <package android:name="com.ubercab" />
-        <package android:name="com.airbnb.android" />
     </queries>
 
     <application
-        android:name=".SmsForwarderApplication"
+        android:name="com.zerodev.smsforwarder.SmsForwarderApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -116,9 +63,9 @@
                 tools:node="remove" />
         </provider>
 
-        <!-- Main Activity -->
+        <!-- Launcher -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.zerodev.smsforwarder.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SMSForwarder">
             <intent-filter>
@@ -127,20 +74,9 @@
             </intent-filter>
         </activity>
 
-        <!-- SMS Receiver -->
+        <!-- Boot Receiver: untuk re-setup service / reminder permission setelah reboot -->
         <receiver
-            android:name=".data.receiver.SmsReceiver"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter android:priority="1000">
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
-
-        <!-- Boot Receiver -->
-        <receiver
-            android:name=".data.receiver.BootReceiver"
+            android:name="com.zerodev.smsforwarder.data.receiver.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter android:priority="1000">
@@ -151,16 +87,9 @@
             </intent-filter>
         </receiver>
 
-        <!-- SMS Forwarding Service -->
+        <!-- 🔥 Notification Router Service (inti konsep baru) -->
         <service
-            android:name=".data.service.SmsForwardingService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-
-        <!-- Notification Router Service -->
-        <service
-            android:name=".data.service.NotifRouterService"
+            android:name="com.zerodev.smsforwarder.data.service.NotifRouterService"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -169,6 +98,11 @@
             </intent-filter>
         </service>
 
-    </application>
+        <!-- ❌ Dihapus: semua komponen SMS -->
+        <!--
+        <receiver android:name=".data.receiver.SmsReceiver" ... />
+        <service android:name=".data.service.SmsForwardingService" ... />
+        -->
 
+    </application>
 </manifest>
